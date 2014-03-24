@@ -1,4 +1,4 @@
-Pecan (`pi-ˈkän`)
-=================
+Pecan
+=====
 
-Event-driven console shell for ReactPHP
+Pecan (`pi-ˈkän`) is an event-driven, non-blocking shell for ReactPHP, based on the Symfony Console Shell.
