@@ -1,0 +1,27 @@
+{
+    "name": "mcrumm/pecan",
+    "description": "An event-driven, non-blocking shell for ReactPHP based on the Symfony Console Shell.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Michael Crumm",
+            "email": "mike@crumm.net"
+        }
+    ],
+    "require": {
+        "php": ">= 5.4",
+        "symfony/console": "~2.4",
+        "react/react": "0.4.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Pecan\\": "src"
+        }
+    },
+    "minimum-stability": "stable",
+    "extra": {
+        "branch-alias": {
+            "dev-develop":  "2.0-dev"
+        }
+    }
+}
