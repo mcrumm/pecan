@@ -111,6 +111,22 @@ class Shell extends EventEmitter
     }
 
     /**
+     * @return Application
+     */
+    public function getApplication()
+    {
+        return $this->application;
+    }
+
+    /**
+     * @return ConsoleOutput
+     */
+    public function getOutput()
+    {
+        return $this->output;
+    }
+
+    /**
      * @return bool
      */
     public function isRunning()
