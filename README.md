@@ -2,7 +2,7 @@
 
 Event-driven, non-blocking shell for ReactPHP.
 
-Pecan (`pi-ˈkän`) provides a non-blocking alternative to the shell provided in the [Symfony Console](https://github.com/symfony/console) component.
+Pecan (`/pɪˈkɑːn/`) provides a non-blocking alternative to the shell provided in the [Symfony Console](https://github.com/symfony/console) component.
 
 ## Shell
 
