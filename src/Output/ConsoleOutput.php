@@ -82,7 +82,7 @@ class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
      */
     public function getErrorOutput()
     {
@@ -90,7 +90,7 @@ class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
      */
     public function setErrorOutput(OutputInterface $error)
     {
