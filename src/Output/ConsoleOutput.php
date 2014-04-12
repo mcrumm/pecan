@@ -94,8 +94,8 @@ class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
      */
     public function setErrorOutput(OutputInterface $error)
     {
-        if (!$error instanceof StreamOutput) {
-            throw new \RuntimeException('Error Output must extend \\Pecan\\Output\\StreamOutput');
+        if (!$error instanceof StreamOutputInterface) {
+            throw new \RuntimeException('Error Output must implement \\Pecan\\Output\\StreamOutputInterface');
         }
 
         $this->stderr = $error;
