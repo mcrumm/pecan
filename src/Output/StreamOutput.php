@@ -14,6 +14,7 @@ use Symfony\Component\Console\Output\Output as Output;
  */
 class StreamOutput extends Output implements StreamOutputInterface
 {
+    /** @var Stream */
     private $stream;
 
     /**
@@ -26,17 +27,28 @@ class StreamOutput extends Output implements StreamOutputInterface
      */
     public function __construct(Stream $stream, $verbosity = self::VERBOSITY_NORMAL, $decorated = null, OutputFormatterInterface $formatter = null)
     {
-        $this->stream = $stream;
-
-        $this->stream->on('error', function($error) {
-            $this->emit('error', [ $error, $this ]);
-        });
+        $this->setOutputStream($stream);
 
         if (null === $decorated) {
             $decorated = $this->hasColorSupport();
         }
 
         parent::__construct($verbosity, $decorated, $formatter);
+    }
+
+    /**
+     * @param Stream $stream
+     * @return $this
+     */
+    public function setOutputStream(Stream $stream)
+    {
+        $this->stream = $stream;
+
+        $this->stream->on('error', function($error) {
+            $this->emit('error', [ $error, $this ]);
+        });
+
+        return $this;
     }
 
     /**
