@@ -49,16 +49,16 @@ class Shell extends EventEmitter
      */
     public function start(LoopInterface $loop)
     {
+        if ($this->isRunning()) {
+            throw new \LogicException('The shell is already running.');
+        }
+
         $this->input = new Stream(STDIN, $loop);
         $this->input->on('error', [ $this, 'handleError' ]);
         $this->input->on('data',  [ $this, 'handleInput' ]);
 
         $this->output = new ConsoleOutput($loop);
         $this->output->on('error', [ $this, 'handleError' ]);
-
-        if ($this->isRunning()) {
-            throw new \LogicException('The shell is already running.');
-        }
 
         $this->isRunning = true;
 
