@@ -193,7 +193,7 @@ Welcome to the <info>{$this->application->getName()}</info> shell (<comment>{$th
 At the prompt, type <comment>help</comment> for some help,
 or <comment>list</comment> to get a list of available commands.
 
-To exit the shell, type <comment>^D</comment>.
+To exit the shell, type <comment>exit</comment> or <comment>^D</comment>.
 
 EOF;
     }
