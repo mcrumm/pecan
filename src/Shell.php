@@ -36,7 +36,11 @@ class Shell extends Drupe
 
         $this->application = $application;
 
-        $this->on('error',  [ $this, 'errorHandler' ]);
+        $this->on('error',  function ($error) {
+            $this->console->error($error);
+            $exitCode = $error instanceof \Exception && $error->getCode() != 0 ? $error->getCode() : 1;
+            $this->close($exitCode);
+        });
 
         $this->once('running', function() {
             $this->readline->setPrompt($this->getPrompt());
@@ -61,10 +65,29 @@ class Shell extends Drupe
 
         parent::start($this->loop, $interval);
 
+        $inputHandler = function ($command) {
+
+            $command = (!$command && strlen($command) == 0) ? false : rtrim($command);
+
+            if ('exit' === $command || false === $command) {
+                $this->close();
+                return;
+            } else {
+                $this->emit('data', [ $command, $this ]);
+            }
+
+            $ret = $this->application->run(new StringInput($command), $this->console->getOutput());
+
+            if (0 !== $ret) {
+                $this->console->error([ sprintf('<error>The command terminated with an error status (%s)</error>', $ret), true ]);
+            } else {
+                $this->readline->prompt();
+            }
+        };
+
         // Remove parent listener to override emit for 'data'
         $this->readline->removeAllListeners('line');
-
-        $this->readline->on('line', [ $this, 'inputHandler' ]);
+        $this->readline->on('line', $inputHandler);
 
         $this->loop->run();
     }
@@ -91,41 +114,11 @@ class Shell extends Drupe
     }
 
     /**
-     * Writes the error to STDERR and closes the shell.
-     * This method should only be called by internal callbacks.
-     *
-     * @param $error
+     * @return Console\Output\ConsoleOutputInterface
      */
-    public function errorHandler($error)
+    public function getOutput()
     {
-        $this->console->error($error);
-        $exitCode = $error instanceof \Exception && $error->getCode() != 0 ? $error->getCode() : 1;
-        $this->close($exitCode);
-    }
-
-    /**
-     * This method should only be called by internal callbacks.
-     *
-     * @param $command
-     */
-    public function inputHandler($command) {
-
-        $command = (!$command && strlen($command) == 0) ? false : rtrim($command);
-
-        if ('exit' === $command || false === $command) {
-            $this->close();
-            return;
-        } else {
-            $this->emit('data', [ $command, $this ]);
-        }
-
-        $ret = $this->application->run(new StringInput($command), $this->console->getOutput());
-
-        if (0 !== $ret) {
-            $this->console->error([ sprintf('<error>The command terminated with an error status (%s)</error>', $ret), true ]);
-        } else {
-            $this->readline->prompt();
-        }
+        return $this->console->getOutput();
     }
 
     /**
