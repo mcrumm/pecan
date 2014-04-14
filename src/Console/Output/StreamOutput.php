@@ -1,6 +1,6 @@
 <?php
 
-namespace Pecan\Output;
+namespace Pecan\Console\Output;
 
 use React\Stream\Stream;
 use Symfony\Component\Console\Formatter\OutputFormatterInterface;
@@ -27,7 +27,7 @@ class StreamOutput extends Output implements StreamOutputInterface
      */
     public function __construct(Stream $stream, $verbosity = self::VERBOSITY_NORMAL, $decorated = null, OutputFormatterInterface $formatter = null)
     {
-        $this->setOutputStream($stream);
+        $this->setStream($stream);
 
         if (null === $decorated) {
             $decorated = $this->hasColorSupport();
@@ -40,7 +40,7 @@ class StreamOutput extends Output implements StreamOutputInterface
      * @param Stream $stream
      * @return $this
      */
-    public function setOutputStream(Stream $stream)
+    public function setStream(Stream $stream)
     {
         $this->stream = $stream;
 
@@ -79,6 +79,17 @@ class StreamOutput extends Output implements StreamOutputInterface
     public function on($event, callable $listener)
     {
         $this->stream->on($event, $listener);
+    }
+
+    /**
+     * Helper method to proxy event listeners to the wrapped stream.
+     *
+     * @param $event
+     * @param callable $listener
+     */
+    public function once($event, callable $listener)
+    {
+        $this->stream->once($event, $listener);
     }
 
     /**
