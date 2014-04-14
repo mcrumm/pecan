@@ -31,20 +31,15 @@ $shell->once('running', function (Drupe $shell) {
 // Example callback for the data event.
 $shell->on('data', function ($line, Drupe $shell) {
 
-    $shell->console()->log([ sprintf(PHP_EOL.'// in: %s', $line), true ]);
-    $shell->prompt();
-
-    /*
     $command = (!$line && strlen($line) == 0) ? false : rtrim($line);
-
 
     if ('exit' === $command || false === $command) {
         $shell->close();
     } else {
-
+        $shell->console()->log([ sprintf(PHP_EOL.'// in: %s', $line), true ]);
         $shell->prompt();
     }
-    */
+
 });
 
 // Example callback for the close event.
