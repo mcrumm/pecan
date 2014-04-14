@@ -20,19 +20,21 @@ if (is_dir($vendor = __DIR__ . '/../vendor')) {
     );
 }
 
-$app = new \Symfony\Component\Console\Application(PECAN_NAME, PECAN_VERSION);
+use Symfony\Component\Console\Application;
+use Pecan\Shell;
 
-// Pecan\Shell wraps a standard Symfony Application object.
-$shell = new \Pecan\Shell($app);
+// Pecan\Shell wraps a standard Symfony Application.
+$shell = new Shell(new Application(PECAN_NAME, PECAN_VERSION));
 
 // Example callback for the data event.
-$shell->on('data', function($line, \Pecan\Shell $shell) {
-    $shell->write(sprintf('// in: %s', $line));
+$shell->on('data', function($line, Shell $shell) {
+    $shell->console()->log(sprintf("\n// in: %s\n", $line));
+    //return $shell->close();
 });
 
-// Example callback for the exit event.
-$shell->on('exit', function($code, \Pecan\Shell $shell) {
-    $shell->emit('output', [
+// Example callback for the close event.
+$shell->on('close', function($code, Shell $shell) {
+    $shell->console()->log([
         [
             'Goodbye.',
             sprintf('// Shell exits with code %d', $code)
@@ -41,8 +43,4 @@ $shell->on('exit', function($code, \Pecan\Shell $shell) {
     ]);
 });
 
-$loop = \React\EventLoop\Factory::create();
-
-$shell->start($loop);
-
-$loop->run();
+$shell->run();
