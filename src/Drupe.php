@@ -3,8 +3,6 @@
 namespace Pecan;
 
 use Evenement\EventEmitterTrait;
-use Pecan\Console\Input;
-use Pecan\Console\Output\PecanOutput;
 use React\EventLoop\LoopInterface;
 use React\EventLoop\Timer\Timer;
 
@@ -43,6 +41,19 @@ class Drupe
     private $exitCode = 0;
 
     /**
+     * Constructor.
+     */
+    public function __construct()
+    {
+        $this->readline = new Readline();
+
+        $this->once('running', function() {
+            $this->console = $this->readline->console();
+            $this->readline->setPrompt('drupe> ');
+        });
+    }
+
+    /**
      * Starts the shell.
      *
      * @param LoopInterface $loop
@@ -57,13 +68,6 @@ class Drupe
         }
 
         $this->running  = true;
-
-        $this->input    = new Input($loop);
-        $this->console  = new Console(new PecanOutput($loop));
-
-        $this->readline = new Readline($this->input, $this->console);
-
-        $this->readline->setPrompt('drupe> ');
 
         $this->readline->on('error', function ($error, $object) {
             $this->emit('error', [ $error, $object, $this ]);
@@ -86,17 +90,19 @@ class Drupe
 
         $loop->addPeriodicTimer($interval, [ $this, 'checkRunning' ]);
 
+        $this->readline->start($loop);
+
         $this->emit('running', [ $this ]);
 
         return $loop;
     }
 
     /**
-     * @return Console\ConsoleInterface
+     * @return Console\ConsoleInterface|null
      */
     public function console()
     {
-        return $this->console;
+        return $this->readline->console();
     }
 
     /**

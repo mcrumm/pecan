@@ -43,8 +43,9 @@ class Shell extends Drupe
         });
 
         $this->once('running', function() {
-            $this->readline->setPrompt($this->getPrompt());
+            $this->console = $this->readline->console();
             $this->console->getOutput()->writeln($this->getHeader());
+            $this->readline->setPrompt($this->getPrompt());
             $this->prompt();
         });
 
@@ -55,7 +56,7 @@ class Shell extends Drupe
      * @param float $interval
      * @throws \LogicException
      */
-    public function run($interval = 0.5)
+    public function run($interval = 0.1)
     {
         if ($this->running) {
             throw new \LogicException('The shell is already running.');

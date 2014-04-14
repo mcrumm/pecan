@@ -4,7 +4,9 @@ namespace Pecan;
 
 use Evenement\EventEmitterTrait;
 use Pecan\Console\Input;
-use Pecan\Console\ConsoleInterface;
+use Pecan\Console\Output\PecanOutput;
+use React\EventLoop\LoopInterface;
+use React\EventLoop\Timer\Timer;
 
 /**
  * Readline allows reading of a stream (such as STDIN) on a line-by-line basis.
@@ -22,43 +24,75 @@ class Readline
 {
     use EventEmitterTrait;
 
-    private $input;
-    private $output;
-    private $hasReadline;
-    private $completer;
-    private $prompt;
-    private $oldPrompt;
-    private $paused = true;
-    private $closed = false;
+    /** @var \Pecan\Console\Input */
+    protected $input;
+
+    /** @var \Pecan\Console\Output\ConsoleOutputInterface */
+    protected $output;
+
+    /** @var \Pecan\Console\ConsoleInterface */
+    protected $console;
+
+    /** @var boolean */
+    private $hasReadline, $terminal, $paused = true, $closed = false, $running = false;
 
     /** @var callable */
-    private $questionCallback;
+    private $completer, $questionCallback;
+
+    /** @var string */
+    private $prompt, $oldPrompt;
 
     /**
-     * @param Input $input
-     * @param ConsoleInterface $console
      * @param callable $completer An optional callback for command auto-completion.
+     * @param boolean $terminal Whether this console is a TTY or not.
      * @throws \LogicException if readline support is not available.
      */
-    public function __construct(Input $input, ConsoleInterface $console, callable $completer = null)
+    public function __construct(callable $completer = null, $terminal = null)
     {
-        $this->input        = $input;
-        $this->output       = $console->getOutput();
-        $this->console      = $console;
         $this->hasReadline  = Readline::isFullySupported();
 
         if (!$completer && $this->hasReadline) { $completer = function () { return []; }; }
 
         $this->setCompleter($completer);
 
-        $errorEmitter = $this->getErrorEmitter();
+        $this->setPrompt('> ');
+    }
 
-        $this->output->on('error', $errorEmitter);
-        $this->input->on('error', $errorEmitter);
-        $this->input->on('data', [ $this, 'lineHandler' ]);
+    /**
+     * @param LoopInterface $loop
+     * @param float $interval
+     * @throws \LogicException When called while already running.
+     */
+    public function start(LoopInterface $loop, $interval = 0.1)
+    {
+        if ($this->running) {
+            throw new \LogicException('Readline is already running.');
+        }
+
+        $this->running  = true;
+        $this->input    = new Input($loop);
+        $this->output   = new PecanOutput($loop);
+        $this->console  = new Console($this->output);
+
+        if (!$this->terminal) {
+            $this->terminal = $this->output->isDecorated();
+        }
+
+        // Setup I/O Error Emitters
+        $errorEmitter = $this->getErrorEmitter();
+        $this->output->on('error',  $errorEmitter);
+        $this->input->on('error',   $errorEmitter);
         $this->input->on('end', function () { $this->close(); });
 
-        $this->setPrompt('> ');
+        if ($this->hasReadline) {
+            $loop->addPeriodicTimer($interval, [ $this, 'readlineHandler' ]);
+        } else {
+            $this->input->on('data', [ $this, 'lineHandler' ]);
+            $this->input->resume();
+            $this->paused = false;
+        }
+
+        $this->emit('running', [ $this ]);
     }
 
     /**
@@ -98,7 +132,17 @@ class Readline
     public function getPrompt()
     {
         // using the formatter here is required when using readline
-        return $this->output->getFormatter()->format($this->prompt);
+        return $this->console->format($this->prompt);
+    }
+
+    /**
+     * @return Console\ConsoleInterface
+     */
+    public function console()
+    {
+        if ($this->running) {
+            return $this->console;
+        }
     }
 
     /**
@@ -108,8 +152,13 @@ class Readline
      */
     public function prompt()
     {
-        if ($this->paused) { $this->resume(); }
-        $this->output->write($this->getPrompt());
+        if ($this->hasReadline) {
+            readline_callback_handler_install($this->getPrompt(), [ $this, 'lineHandler' ]);
+        } else {
+            if ($this->paused) { $this->resume(); }
+            $this->console->log($this->getPrompt());
+        }
+
         return $this;
     }
 
@@ -175,6 +224,36 @@ class Readline
     }
 
     /**
+     * @param $line
+     */
+    public function lineHandler($line)
+    {
+        if ($this->questionCallback) {
+            $cb = $this->questionCallback;
+            $this->questionCallback = null;
+            $this->setPrompt($this->oldPrompt);
+            $cb($line);
+        } else {
+            $this->emit('line', [ $line ]);
+        }
+
+        if ($this->hasReadline) {
+            //readline_callback_handler_remove();
+        }
+    }
+
+    public function readlineHandler(Timer $timer)
+    {
+        $w  = NULL;
+        $e  = NULL;
+        $r  = [ $this->input->stream ];
+        $n  = stream_select($r, $w, $e, NULL);
+        if ($n && in_array($this->input->stream, $r)) {
+            readline_callback_read_char();
+        }
+    }
+
+    /**
      * Returns whether or not readline is available to PHP.
      *
      * @return boolean
@@ -192,18 +271,6 @@ class Readline
         return function ($error, $input) {
             $this->emit('error', [ $error, $input ]);
         };
-    }
-
-    public function lineHandler($line)
-    {
-        if ($this->questionCallback) {
-            $cb = $this->questionCallback;
-            $this->questionCallback = null;
-            $this->setPrompt($this->oldPrompt);
-            $cb($line);
-        } else {
-            $this->emit('line', [ $line ]);
-        }
     }
 
 }
