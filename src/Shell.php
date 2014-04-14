@@ -2,8 +2,7 @@
 
 namespace Pecan;
 
-use Evenement\EventEmitterTrait;
-use Pecan\Console\Output\PecanOutput;
+use Evenement\EventEmitterTrait;;
 use React\EventLoop\Factory;
 use React\EventLoop\LoopInterface;
 use Symfony\Component\Console\Application;
@@ -37,11 +36,11 @@ class Shell extends Drupe
 
         $this->application = $application;
 
-        //$this->on('error',  [ $this, 'errorHandler' ]);
+        $this->on('error',  [ $this, 'errorHandler' ]);
 
         $this->once('running', function() {
             $this->readline->setPrompt($this->getPrompt());
-            $this->console()->log([ $this->getHeader(), true ]);
+            $this->console->getOutput()->writeln($this->getHeader());
             $this->prompt();
         });
 
@@ -99,7 +98,7 @@ class Shell extends Drupe
      */
     public function errorHandler($error)
     {
-        $this->console()->error($error);
+        $this->console->error($error);
         $exitCode = $error instanceof \Exception && $error->getCode() != 0 ? $error->getCode() : 1;
         $this->close($exitCode);
     }
@@ -115,17 +114,18 @@ class Shell extends Drupe
 
         if ('exit' === $command || false === $command) {
             $this->close();
+            return;
         } else {
             $this->emit('data', [ $command, $this ]);
         }
 
-        $ret = $this->application->run(new StringInput($command), $this->output);
+        $ret = $this->application->run(new StringInput($command), $this->console->getOutput());
 
         if (0 !== $ret) {
-            $this->console()->error([ sprintf('<error>The command terminated with an error status (%s)</error>', $ret), true ]);
+            $this->console->error([ sprintf('<error>The command terminated with an error status (%s)</error>', $ret), true ]);
+        } else {
+            $this->readline->prompt();
         }
-
-        $this->readline->prompt();
     }
 
     /**
