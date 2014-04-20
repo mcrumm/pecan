@@ -1,7 +1,7 @@
 {
     "name": "mcrumm/pecan",
     "description": "An event-driven, non-blocking shell for ReactPHP based on the Symfony Console Shell.",
-    "keywords": [ "shell", "console", "react" ]
+    "keywords": [ "shell", "console", "react" ],
     "license": "MIT",
     "authors": [
         {
@@ -11,8 +11,10 @@
     ],
     "require": {
         "php": ">= 5.4",
+        "react/promise": "~2.0",
         "symfony/console": "~2.4",
-        "react/react": "0.4.*"
+        "react/child-process": "0.4.*"
+
     },
     "require-dev": {
         "phpspec/phpspec": "2.0.*@dev"
@@ -32,4 +34,3 @@
         }
     }
 }
-
