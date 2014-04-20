@@ -50,7 +50,7 @@ class Shell extends Drupe
 
         $this->loop = $loop ?: Factory::create();
 
-        parent::__construct();
+        parent::__construct(getenv('HOME').'/.history_'.$application->getName());
     }
 
     /**

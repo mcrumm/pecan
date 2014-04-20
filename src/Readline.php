@@ -40,15 +40,16 @@ class Readline
     private $completer, $questionCallback;
 
     /** @var string */
-    private $prompt, $oldPrompt;
+    private $prompt, $oldPrompt, $history, $lastHistory;
 
     /**
      * @param callable $completer An optional callback for command auto-completion.
      * @param boolean $terminal Whether this console is a TTY or not.
      * @throws \LogicException if readline support is not available.
      */
-    public function __construct(callable $completer = null, $terminal = null)
+    public function __construct($history = null, callable $completer = null, $terminal = null)
     {
+        $this->history      = $history;
         $this->hasReadline  = Readline::isFullySupported();
 
         if (!$completer && $this->hasReadline) { $completer = function () { return []; }; }
@@ -78,6 +79,10 @@ class Readline
             $this->terminal = $this->output->isDecorated();
         }
 
+        if ($this->hasReadline) {
+            $this->readHistory();
+        }
+
         // Setup I/O Error Emitters
         $errorEmitter = $this->getErrorEmitter();
         $this->output->on('error',  $errorEmitter);
@@ -93,6 +98,29 @@ class Readline
         }
 
         $this->emit('running', [ $this ]);
+    }
+
+    /**
+     * Reads a line from the history file, if available.
+     *
+     */
+    public function readHistory()
+    {
+        if ($this->hasReadline) {
+            readline_read_history($this->history);
+        }
+    }
+
+    /**
+     * Adds a line to the readline history.
+     *
+     */
+    public function addHistory($line)
+    {
+        if ($this->hasReadline) {
+            readline_add_history($line);
+            readline_write_history($this->history);
+        }
     }
 
     /**
