@@ -19,12 +19,6 @@ class Drupe
 {
     use EventEmitterTrait;
 
-    /** @var string The name of this shell. */
-    protected $name;
-
-    /** @var string The version identifier for this shell. */
-    protected $version;
-
     /** @var \Pecan\Readline */
     protected $readline;
 
@@ -43,9 +37,10 @@ class Drupe
     /**
      * Constructor.
      */
-    public function __construct()
+    public function __construct($history = null)
     {
-        $this->readline = new Readline();
+        $history        = $history ?: getenv('HOME').'/.drupe_history';
+        $this->readline = new Readline($history);
 
         $this->once('running', function() {
             $this->console = $this->readline->console();
@@ -61,7 +56,7 @@ class Drupe
      * @return LoopInterface Returns the provided loop to allow for fluent calls to "run()"
      * @throws \LogicException if the shell is already running.
      */
-    public function start(LoopInterface $loop, $interval = 0.1)
+    public function start(LoopInterface $loop, $interval = 0.001)
     {
         if ($this->running) {
             throw new \LogicException('The shell is already running.');
@@ -74,6 +69,7 @@ class Drupe
         });
 
         $this->readline->on('line', function ($command) {
+            $this->readline->addHistory($command);
             $this->emit('data', [ $command, $this ]);
         });
 

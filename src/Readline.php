@@ -40,15 +40,16 @@ class Readline
     private $completer, $questionCallback;
 
     /** @var string */
-    private $prompt, $oldPrompt;
+    private $prompt, $oldPrompt, $history, $lastHistory;
 
     /**
      * @param callable $completer An optional callback for command auto-completion.
      * @param boolean $terminal Whether this console is a TTY or not.
      * @throws \LogicException if readline support is not available.
      */
-    public function __construct(callable $completer = null, $terminal = null)
+    public function __construct($history = null, callable $completer = null, $terminal = null)
     {
+        $this->history      = $history;
         $this->hasReadline  = Readline::isFullySupported();
 
         if (!$completer && $this->hasReadline) { $completer = function () { return []; }; }
@@ -63,7 +64,7 @@ class Readline
      * @param float $interval
      * @throws \LogicException When called while already running.
      */
-    public function start(LoopInterface $loop, $interval = 0.1)
+    public function start(LoopInterface $loop, $interval = 0.001)
     {
         if ($this->running) {
             throw new \LogicException('Readline is already running.');
@@ -76,6 +77,10 @@ class Readline
 
         if (!$this->terminal) {
             $this->terminal = $this->output->isDecorated();
+        }
+
+        if ($this->hasReadline) {
+            $this->readHistory();
         }
 
         // Setup I/O Error Emitters
@@ -93,6 +98,29 @@ class Readline
         }
 
         $this->emit('running', [ $this ]);
+    }
+
+    /**
+     * Reads a line from the history file, if available.
+     *
+     */
+    public function readHistory()
+    {
+        if ($this->hasReadline) {
+            readline_read_history($this->history);
+        }
+    }
+
+    /**
+     * Adds a line to the readline history.
+     *
+     */
+    public function addHistory($line)
+    {
+        if ($this->hasReadline) {
+            readline_add_history($line);
+            readline_write_history($this->history);
+        }
     }
 
     /**
@@ -247,7 +275,7 @@ class Readline
         $w  = NULL;
         $e  = NULL;
         $r  = [ $this->input->stream ];
-        $n  = stream_select($r, $w, $e, NULL);
+        $n  = stream_select($r, $w, $e, 0, 20000);
         if ($n && in_array($this->input->stream, $r)) {
             readline_callback_read_char();
         }
