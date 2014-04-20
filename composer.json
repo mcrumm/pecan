@@ -1,6 +1,7 @@
 {
     "name": "mcrumm/pecan",
     "description": "An event-driven, non-blocking shell for ReactPHP based on the Symfony Console Shell.",
+    "keywords": [ "shell", "console", "react" ]
     "license": "MIT",
     "authors": [
         {
@@ -31,3 +32,4 @@
         }
     }
 }
+
