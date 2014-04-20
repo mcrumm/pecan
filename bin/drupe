@@ -1,9 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-define('PECAN_NAME', 'pecan');
-define('PECAN_VERSION', 'DEV');
-
 if (is_dir($vendor = getcwd() . '/vendor')) {
     require $vendor . '/autoload.php';
 }
@@ -20,27 +17,40 @@ if (is_dir($vendor = __DIR__ . '/../vendor')) {
     );
 }
 
-use Symfony\Component\Console\Application;
-use Pecan\Shell;
+use Pecan\Drupe;
 
-// Pecan\Shell wraps a standard Symfony Application.
-$shell = new Shell(new Application(PECAN_NAME, PECAN_VERSION));
+$loop   = \React\EventLoop\Factory::create();
+$shell  = new Drupe();
+
+// Example one-time callback to write the initial prompt.
+// This resumes reading from STDIN and kicks off the shell.
+$shell->once('running', function (Drupe $shell) {
+    $shell->setPrompt('drupe> ')->prompt();
+});
 
 // Example callback for the data event.
-$shell->on('data', function($line, Shell $shell) {
-    $shell->console()->log(sprintf("\n// in: %s\n", $line));
-    //return $shell->close();
+$shell->on('data', function ($line, Drupe $shell) {
+
+    $command = (!$line && strlen($line) == 0) ? false : rtrim($line);
+
+    if ('exit' === $command || false === $command) {
+        $shell->close();
+    } else {
+        $shell->console()->log([ sprintf(PHP_EOL.'// in: %s', $line), true ]);
+        $shell->prompt();
+    }
+
 });
 
 // Example callback for the close event.
-$shell->on('close', function($code, Shell $shell) {
+$shell->on('close', function ($code, Drupe $shell) {
     $shell->console()->log([
         [
-            'Goodbye.',
+            '// Goodbye.',
             sprintf('// Shell exits with code %d', $code)
         ],
         true
     ]);
 });
 
-$shell->run();
+$shell->start($loop)->run();

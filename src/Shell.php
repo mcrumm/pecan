@@ -2,165 +2,124 @@
 
 namespace Pecan;
 
-use Evenement\EventEmitter;
-use Evenement\EventEmitterTrait;
-use Pecan\Output\ConsoleOutput;
+use Evenement\EventEmitterTrait;;
+use React\EventLoop\Factory;
 use React\EventLoop\LoopInterface;
-use React\Promise\Deferred;
-use React\Stream\Stream;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\StringInput;
 
 /**
- * A non-blocking console shell, based on the Symfony Console Shell.
+ * Pecan\Shell
+ *
+ * A non-blocking console shell for ReactPHP, based on the Symfony Console Component.
  *
  * @event running
- * @event exit
+ * @event data
+ * @event error
+ * @event close
+ * @see \Symfony\Component\Console\Shell
  */
-class Shell extends EventEmitter
+class Shell extends Drupe
 {
     private $application;
-
-    /** @var Stream */
-    private $input;
-
-    /** @var ConsoleOutput */
-    private $output;
-
-    private $isRunning = false;
+    private $loop;
+    private $running = false;
 
     /**
-     * Constructor.
-     *
      * @param Application $application
+     * @param LoopInterface $loop
      */
-    public function __construct(Application $application)
+    public function __construct(Application $application, LoopInterface $loop = null)
     {
+        $application->setAutoExit(false);
+        $application->setCatchExceptions(true);
+
         $this->application = $application;
 
-        $this->on('running', function(Shell $shell) {
-            $shell->write([ $this->getHeader(), $this->getPrompt() ], false);
+        $this->on('error',  function ($error) {
+            $this->console->error($error);
+            $exitCode = $error instanceof \Exception && $error->getCode() != 0 ? $error->getCode() : 1;
+            $this->close($exitCode);
         });
+
+        $this->once('running', function() {
+            $this->console = $this->readline->console();
+            $this->console->getOutput()->writeln($this->getHeader());
+            $this->readline->setPrompt($this->getPrompt());
+            $this->prompt();
+        });
+
+        $this->loop = $loop ?: Factory::create();
     }
 
     /**
-     * @param LoopInterface $loop
+     * @param float $interval
      * @throws \LogicException
      */
-    public function start(LoopInterface $loop)
+    public function run($interval = 0.1)
     {
-        $this->input = new Stream(STDIN, $loop);
-        $this->input->on('error', [ $this, 'handleError' ]);
-        $this->input->on('data',  [ $this, 'handleInput' ]);
-
-        $this->output = new ConsoleOutput($loop);
-        $this->output->on('error', [ $this, 'handleError' ]);
-
-        if ($this->isRunning()) {
+        if ($this->running) {
             throw new \LogicException('The shell is already running.');
         }
 
-        $this->isRunning = true;
+        $this->running = true;
 
-        $this->application->setAutoExit(false);
-        $this->application->setCatchExceptions(true);
+        parent::start($this->loop, $interval);
 
-        $this->on('data', function($command) {
+        $inputHandler = function ($command) {
 
-            $ret = $this->application->run(new StringInput($command), $this->output);
+            $command = (!$command && strlen($command) == 0) ? false : rtrim($command);
+
+            if ('exit' === $command || false === $command) {
+                $this->close();
+                return;
+            } else {
+                $this->emit('data', [ $command, $this ]);
+            }
+
+            $ret = $this->application->run(new StringInput($command), $this->console->getOutput());
 
             if (0 !== $ret) {
-                $this->output->writeln(sprintf('<error>The command terminated with an error status (%s)</error>', $ret));
+                $this->console->error([ sprintf('<error>The command terminated with an error status (%s)</error>', $ret), true ]);
+            } else {
+                $this->readline->prompt();
             }
-        });
+        };
 
-        $this->on('output', [ $this, 'write' ]);
+        // Remove parent listener to override emit for 'data'
+        $this->readline->removeAllListeners('line');
+        $this->readline->on('line', $inputHandler);
 
-        $this->emit('running', [ $this ]);
-    }
-
-    /**
-     * Helper method to write messages to the Shell output.
-     *
-     * @param $messages
-     * @param $newline
-     */
-    public function write($messages, $newline = true)
-    {
-        $this->output->write($messages, $newline);
+        $this->loop->run();
     }
 
     /**
      * Exits the shell.
      *
-     * @event exit
+     * @param integer $exitCode
+     * @return $this;
      */
-    public function close($code = 0)
+    public function close($exitCode = 0)
     {
-        if (!$this->isRunning()) { return; }
+        if (!$this->running) { return $this; }
 
-        $this->handleClose($code)->then(function($code) {
-            // @codeCoverageIgnoreStart
-            exit($code);
-            // @codeCoverageIgnoreEnd
-        });
-
-        $this->emit('exit', [ $code, $this ]);
-
-        $this->output->end();
+        return parent::close($exitCode);
     }
 
     /**
-     * @return bool
+     * @return Application
      */
-    public function isRunning()
+    public function getApplication()
     {
-        return $this->isRunning;
+        return $this->application;
     }
 
     /**
-     * This method should only be called by the Shell when an data event is emitted on the input stream.
-     *
-     * @param $command
+     * @return Console\Output\ConsoleOutputInterface
      */
-    public function handleInput($command)
+    public function getOutput()
     {
-        $command = (!$command && strlen($command) == 0) ? false : rtrim($command);
-
-        if ('exit' === $command || false === $command) {
-            $this->close();
-        }
-
-        $this->emit('data', [ $command, $this ]);
-
-        $this->output->write($this->getPrompt());
-    }
-
-    /**
-     * Emits the error and exits the shell.
-     *
-     * @param $error
-     */
-    public function handleError($error)
-    {
-        $this->output->getErrorOutput()->write($error);
-        $exitCode = $error instanceof \Exception && $error->getCode() != 0 ? $error->getCode() : 1;
-        $this->close($exitCode);
-    }
-
-    /**
-     * @param int $code
-     * @return \React\Promise\Promise
-     */
-    protected function handleClose($code = 0)
-    {
-        $deferred = new Deferred();
-
-        $this->output->on('end', function() use ($deferred, $code) {
-            $deferred->resolve($code);
-        });
-
-        return $deferred->promise();
+        return $this->console->getOutput();
     }
 
     /**
@@ -177,7 +136,7 @@ Welcome to the <info>{$this->application->getName()}</info> shell (<comment>{$th
 At the prompt, type <comment>help</comment> for some help,
 or <comment>list</comment> to get a list of available commands.
 
-To exit the shell, type <comment>^D</comment>.
+To exit the shell, type <comment>exit</comment> or <comment>^D</comment>.
 
 EOF;
     }
@@ -189,8 +148,7 @@ EOF;
      */
     protected function getPrompt()
     {
-        // using the formatter here is required when using readline
-        return $this->output->getFormatter()->format($this->application->getName().' > ');
+        return $this->application->getName() . ' > ';
     }
 
 }

@@ -1,23 +1,20 @@
 <?php
 
-namespace Pecan\Output;
+namespace Pecan\Console\Output;
 
 use React\EventLoop\LoopInterface;
 use React\Stream\Stream;
-use Symfony\Component\Console\Output\ConsoleOutputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Formatter\OutputFormatterInterface;
 
 /**
- * ConsoleOutput
+ * PecanOutput
  *
  * This class borrows logic from Symfony's Console component for ensuring
  * compatibility with the PHP's output and error streams.
  */
-class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
+class PecanOutput extends ConsoleOutput
 {
     private $pipes;
-    private $stderr;
 
     /**
      * Constructor.
@@ -33,25 +30,7 @@ class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
 
         parent::__construct(new Stream($this->pipes[0], $loop), $verbosity, $decorated, $formatter);
 
-        $this->stderr = new StreamOutput(new Stream($this->pipes[1], $loop), $verbosity, $decorated, $formatter);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function on($event, callable $listener)
-    {
-        parent::on($event, $listener);
-        $this->stderr->on($event, $listener);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function emit($event, array $arguments = [])
-    {
-        parent::emit($event, $arguments);
-        $this->stderr->emit($event, $arguments);
+        $this->setErrorOutput(new StreamOutput(new Stream($this->pipes[1], $loop), $verbosity, $decorated, $formatter));
     }
 
     /**
@@ -79,26 +58,6 @@ class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
     {
         parent::setVerbosity($level);
         $this->stderr->setVerbosity($level);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getErrorOutput()
-    {
-        return $this->stderr;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setErrorOutput(OutputInterface $error)
-    {
-        if (!$error instanceof StreamOutput) {
-            throw new \RuntimeException('Error Output must extend \\Pecan\\Output\\StreamOutput');
-        }
-
-        $this->stderr = $error;
     }
 
     /**
