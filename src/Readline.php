@@ -43,6 +43,7 @@ class Readline
     private $prompt, $oldPrompt, $history, $lastHistory;
 
     /**
+     * @param string $history The path to a history file.
      * @param callable $completer An optional callback for command auto-completion.
      * @param boolean $terminal Whether this console is a TTY or not.
      * @throws \LogicException if readline support is not available.
