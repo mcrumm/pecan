@@ -42,21 +42,22 @@ class Shell extends Drupe
             $this->close($exitCode);
         });
 
-        $this->once('running', function() {
+        $this->once('running', function(Drupe $shell) {
             $this->console = $this->readline->console();
             $this->console->getOutput()->writeln($this->getHeader());
-            $this->readline->setPrompt($this->getPrompt());
-            $this->prompt();
+            $shell->setPrompt($this->getPrompt())->prompt();
         });
 
         $this->loop = $loop ?: Factory::create();
+
+        parent::__construct();
     }
 
     /**
      * @param float $interval
      * @throws \LogicException
      */
-    public function run($interval = 0.1)
+    public function run($interval = 0.001)
     {
         if ($this->running) {
             throw new \LogicException('The shell is already running.');

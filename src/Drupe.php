@@ -61,7 +61,7 @@ class Drupe
      * @return LoopInterface Returns the provided loop to allow for fluent calls to "run()"
      * @throws \LogicException if the shell is already running.
      */
-    public function start(LoopInterface $loop, $interval = 0.1)
+    public function start(LoopInterface $loop, $interval = 0.001)
     {
         if ($this->running) {
             throw new \LogicException('The shell is already running.');

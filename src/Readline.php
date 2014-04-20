@@ -63,7 +63,7 @@ class Readline
      * @param float $interval
      * @throws \LogicException When called while already running.
      */
-    public function start(LoopInterface $loop, $interval = 0.1)
+    public function start(LoopInterface $loop, $interval = 0.001)
     {
         if ($this->running) {
             throw new \LogicException('Readline is already running.');
@@ -247,7 +247,7 @@ class Readline
         $w  = NULL;
         $e  = NULL;
         $r  = [ $this->input->stream ];
-        $n  = stream_select($r, $w, $e, NULL);
+        $n  = stream_select($r, $w, $e, 0, 20000);
         if ($n && in_array($this->input->stream, $r)) {
             readline_callback_read_char();
         }
