@@ -18,29 +18,33 @@ The Output classes extend the base Console Output. `StreamOutput` wraps a single
 
 Here is a shell that echoes back any input it receives:
 
-    $app = new \Symfony\Component\Console\Application();
+```php
+$app = new \Symfony\Component\Console\Application();
 
-    $shell = new \Pecan\Shell($app);
+$shell = new \Pecan\Shell($app);
 
-    $shell->on('data', function($line, \Pecan\Shell $shell) {
-        $shell->write(sprintf('// in: %s', $line));
-    });
+$shell->on('data', function($line, \Pecan\Shell $shell) {
+    $shell->write(sprintf('// in: %s', $line));
+});
 
-    $loop = \React\EventLoop\Factory::create();
+$loop = \React\EventLoop\Factory::create();
 
-    $shell->start($loop);
+$shell->start($loop);
 
-    $loop->run();
+$loop->run();
+```
 
 Attaching to the `exit` event allows final output to be send before the shell exits:
 
-    // Example callback for the exit event.
-    $shell->on('exit', function($code, \Pecan\Shell $shell) {
-        $shell->emit('output', [
-            [
-                'Goodbye.',
-                sprintf('// Shell exits with code %d', $code)
-            ],
-            true
-        ]);
-    });
+```php
+// Example callback for the exit event.
+$shell->on('exit', function($code, \Pecan\Shell $shell) {
+    $shell->emit('output', [
+        [
+            'Goodbye.',
+            sprintf('// Shell exits with code %d', $code)
+        ],
+        true
+    ]);
+});
+```
