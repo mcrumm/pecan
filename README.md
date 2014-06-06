@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/mcrumm/pecan.png?label=ready&title=Ready)](https://waffle.io/mcrumm/pecan)
 Pecan
 =====
 
