@@ -24,7 +24,7 @@ interface ConsoleInterface
     public function getOutput();
 
     /**
-     * @param $message
+     * @param string $message
      * @return string
      */
     public function format($message);
