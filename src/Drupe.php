@@ -36,6 +36,7 @@ class Drupe
 
     /**
      * Constructor.
+     * @param string $history
      */
     public function __construct($history = null)
     {
@@ -119,7 +120,7 @@ class Drupe
     /**
      * Sets the prompt on the terminal, if running.
      *
-     * @param $prompt
+     * @param string $prompt
      * @return $this
      */
     public function setPrompt($prompt)

@@ -20,7 +20,7 @@ class PecanOutput extends ConsoleOutput
      * Constructor.
      *
      * @param LoopInterface $loop
-     * @param bool|int $verbosity
+     * @param integer $verbosity
      * @param null $decorated
      * @param OutputFormatterInterface $formatter
      */

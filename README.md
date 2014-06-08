@@ -125,7 +125,7 @@ $shell->run();
 
 ### Injecting An `EventLoopInterface` into `Pecan\Shell`
 
-Unless you pass `\Pecan\Shell` an object implementing `EventLoopInterface` as its second constructor method, the `Shell` will instantiate one from the EventLoop Factory.  Keep this in mind if you want to integrate Pecan into an existing React-based project.
+Unless you pass `\Pecan\Shell` an object implementing `EventLoopInterface` as its second constructor method, the `Shell` will get one from the EventLoop Factory.  Keep this in mind if you want to integrate Pecan into an existing ReactPHP project.
 
 ```php
 use Symfony\Component\Console\Application;
@@ -139,4 +139,19 @@ $shell = new Shell(new Application('pecan'), $loop);
 
 // We must still let the shell run the EventLoop.
 $shell->run();
+```
+
+### Example `exit` callback
+
+```php
+// Example callback for the exit event.
+$shell->on('exit', function($code, \Pecan\Shell $shell) {
+    $shell->emit('output', [
+        [
+            'Goodbye.',
+            sprintf('// Shell exits with code %d', $code)
+        ],
+        true
+    ]);
+});
 ```
