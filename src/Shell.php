@@ -2,7 +2,7 @@
 
 namespace Pecan;
 
-use Evenement\EventEmitterTrait;;
+;
 use React\EventLoop\Factory;
 use React\EventLoop\LoopInterface;
 use Symfony\Component\Console\Application;

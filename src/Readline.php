@@ -292,7 +292,7 @@ class Readline
     }
 
     /**
-     * @return callable
+     * @return \Closure
      */
     protected function getErrorEmitter()
     {

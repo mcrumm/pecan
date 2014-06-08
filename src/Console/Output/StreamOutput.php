@@ -21,7 +21,7 @@ class StreamOutput extends Output implements StreamOutputInterface
      * Constructor.
      *
      * @param Stream $stream
-     * @param bool|int $verbosity
+     * @param integer $verbosity
      * @param null $decorated
      * @param OutputFormatterInterface $formatter
      */
